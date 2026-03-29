@@ -99,10 +99,9 @@ class StepRequest(BaseModel):
 # Routes
 # ---------------------------------------------------------------------------
 
-@app.get("/", response_model=HealthResponse, tags=["Health"])
-async def health():
-    """Health check endpoint."""
-    return HealthResponse()
+@app.get("/")
+def health():
+    return {"status": "ok"}
 
 
 @app.get("/reset", tags=["Environment"])
