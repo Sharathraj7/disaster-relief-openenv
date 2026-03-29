@@ -1,0 +1,192 @@
+name: ai-disaster-relief-logistics
+version: "1.0.0"
+description: >
+  A simulation environment where an AI agent allocates limited disaster relief
+  resources (food, water, medicine, trucks, fuel) across multiple affected regions
+  with varying severity levels. The agent must prioritize high-severity regions,
+  optimize resource usage, and minimize unmet needs and casualties.
+
+author: OpenEnv Contributor
+license: MIT
+tags:
+  - disaster-relief
+  - logistics
+  - resource-allocation
+  - multi-objective
+  - humanitarian-ai
+
+environment:
+  module: env.environment
+  class: DisasterReliefEnv
+
+observation_space:
+  type: dict
+  properties:
+    time_step:
+      type: integer
+      description: Current simulation step (0-indexed)
+    max_steps:
+      type: integer
+      description: Maximum number of steps in the episode
+    resources:
+      type: object
+      description: Available global resource pool
+      properties:
+        food:
+          type: number
+          unit: tons
+        water:
+          type: number
+          unit: kiloliters
+        medicine:
+          type: number
+          unit: units
+        trucks:
+          type: integer
+          description: Number of transport vehicles available
+        fuel:
+          type: number
+          unit: liters
+    regions:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          name:
+            type: string
+          severity:
+            type: integer
+            minimum: 1
+            maximum: 10
+            description: Disaster severity (10 = most critical)
+          population:
+            type: integer
+          needs:
+            type: object
+            properties:
+              food:
+                type: number
+              water:
+                type: number
+              medicine:
+                type: number
+          unmet_needs:
+            type: object
+            properties:
+              food:
+                type: number
+              water:
+                type: number
+              medicine:
+                type: number
+          location:
+            type: string
+          disaster_type:
+            type: string
+            enum: [flood, earthquake, cyclone, drought]
+    unmet_needs_total:
+      type: object
+      description: Aggregated unmet needs across all regions
+      properties:
+        food:
+          type: number
+        water:
+          type: number
+        medicine:
+          type: number
+    deaths_averted:
+      type: integer
+    episode_score:
+      type: number
+      minimum: 0.0
+      maximum: 1.0
+
+action_space:
+  type: object
+  description: >
+    Agent specifies deliveries to regions. Each delivery reduces global
+    resources and reduces unmet needs in the target region.
+  properties:
+    deliveries:
+      type: array
+      items:
+        type: object
+        required:
+          - region_id
+          - resource
+          - amount
+        properties:
+          region_id:
+            type: string
+            description: Target region identifier
+          resource:
+            type: string
+            enum: [food, water, medicine]
+            description: Type of resource to deliver
+          amount:
+            type: number
+            minimum: 0
+            description: Quantity to deliver (must not exceed available resources)
+
+tasks:
+  - id: easy
+    name: "Two-Region Flood Relief"
+    description: >
+      A flood has affected 2 regions. Resources are fully sufficient.
+      The agent should learn basic prioritization by severity.
+    difficulty: easy
+    max_steps: 5
+    scenario: flood
+    module: env.tasks
+    class: EasyTask
+
+  - id: medium
+    name: "Four-Region Earthquake Response"
+    description: >
+      An earthquake has struck 4 regions with limited supplies.
+      The agent must triage and allocate scarce resources wisely.
+    difficulty: medium
+    max_steps: 8
+    scenario: earthquake
+    module: env.tasks
+    class: MediumTask
+
+  - id: hard
+    name: "Six-Region Cyclone with Dynamic Deterioration"
+    description: >
+      A cyclone ravages 6+ regions with severe resource scarcity.
+      Unmet needs escalate each step. Agent must adapt dynamically.
+    difficulty: hard
+    max_steps: 12
+    scenario: cyclone
+    module: env.tasks
+    class: HardTask
+
+grader:
+  module: env.grader
+  class: DisasterReliefGrader
+  scoring:
+    priority_allocation: 0.50
+    resource_efficiency: 0.30
+    unmet_needs_reduction: 0.20
+    progress_bonus: 0.10
+  penalty:
+    critical_region_ignored: -0.15    # Reduced from -0.30 for fairer hard-task evaluation
+    critical_unmet_threshold: 0.70    # Triggers only when >70% unmet (was 50%)
+
+metrics:
+  - name: score
+    type: float
+    range: [0.0, 1.0]
+  - name: unmet_needs_reduction_pct
+    type: float
+  - name: severity_weighted_coverage
+    type: float
+  - name: deaths_averted
+    type: integer
+
+baseline:
+  module: baseline.run_baseline
+  class: HeuristicAgent
