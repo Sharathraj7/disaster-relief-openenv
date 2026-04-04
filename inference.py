@@ -263,6 +263,7 @@ def run_episode(task_id: str = TASK_ID) -> None:
     # 1. Build LLM client
     client = build_client()
 
+    print("[START]")
     # 2. Reset environment (single reset — no reset between steps)
     reset_data = reset_environment(task_id)
     state = reset_data["state"]
@@ -277,7 +278,7 @@ def run_episode(task_id: str = TASK_ID) -> None:
 
     # 3. Episode loop
     for step_num in range(1, max_steps + 1):
-        print(f"--- Step {step_num}/{max_steps} " + "-" * 40)
+        print(f"[STEP] {step_num}")
 
         # Build prompt from current (returned) state
         prompt = state_to_prompt(state)
@@ -322,9 +323,7 @@ def run_episode(task_id: str = TASK_ID) -> None:
         run_log.append(step_record)
 
         if done:
-            print(f"\n{'=' * 60}")
-            print("  EPISODE COMPLETE")
-            print(f"{'=' * 60}")
+            print("[END]")
             break
 
     # 4. Save run log to JSON

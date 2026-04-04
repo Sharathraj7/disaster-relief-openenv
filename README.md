@@ -1,18 +1,3 @@
----
-title: AI Disaster Relief Logistics Agent
-emoji: 🌊
-colorFrom: blue
-colorTo: red
-sdk: docker
-pinned: false
-tags:
-  - openenv
-  - disaster-relief
-  - logistics
-  - humanitarian-ai
-  - resource-allocation
----
-
 # AI Disaster Relief Logistics & Supply Allocation Agent
 
 [![OpenEnv](https://img.shields.io/badge/OpenEnv-v1.0-blue)](https://openenv.ai)
