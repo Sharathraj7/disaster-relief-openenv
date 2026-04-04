@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-disaster-relief-logistics"
+version = "1.0.0"
+description = "OpenEnv simulation: AI agent allocates limited disaster relief resources across affected regions"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Sharath Raj"},
+]
+keywords = [
+    "disaster-relief",
+    "logistics",
+    "resource-allocation",
+    "openenv",
+    "reinforcement-learning",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.29.0",
+    "pydantic>=2.7.0",
+    "openai>=1.30.0",
+    "requests>=2.31.0",
+    "pyyaml>=6.0.1",
+    "python-multipart>=0.0.9",
+    "httpx>=0.27.0",
+]
+
+[project.urls]
+Homepage = "https://huggingface.co/spaces/Sharath569/disaster-relief-env"
+Repository = "https://github.com/Sharathraj7/disaster-relief-openenv"
+
+[project.scripts]
+inference = "inference:run_episode"
+
+[tool.setuptools.packages.find]
+include = ["env*", "baseline*"]
+
+[tool.openenv]
+name = "ai-disaster-relief-logistics"
+version = "1.0.0"
+environment_module = "env.environment"
+environment_class = "DisasterReliefEnv"
+app_file = "app.py"
+inference_file = "inference.py"
+spec_file = "openenv.yaml"
+tasks = ["easy", "medium", "hard"]
