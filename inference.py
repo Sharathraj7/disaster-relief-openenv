@@ -293,7 +293,7 @@ def run_episode(task_id: str = TASK_ID) -> None:
 
     # 2. Reset environment (single reset — no reset between steps)
     reset_data = reset_environment(task_id)
-    state = reset_data["state"]
+    state = reset_data["observation"]
     max_steps = state["max_steps"]
 
     print(f"[START] task={task_id} env=ai-disaster-relief-logistics model={MODEL_NAME}")

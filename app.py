@@ -106,21 +106,19 @@ def health():
 
 @app.get("/reset", tags=["Environment"])
 async def reset_get(task_id: str = Query(default="easy", description="Task difficulty: easy | medium | hard")):
-    """
-    Reset the environment via GET request.
-
-    Query parameter:
-      - task_id: 'easy' | 'medium' | 'hard'  (default: 'easy')
-    """
     global env
     async with env_lock:
         try:
             state = env.reset(task_id=task_id)
             logger.info("Environment reset via GET | task=%s", task_id)
             return {
-                "message": "Environment reset successfully",
-                "task_id": task_id,
-                "state": state.model_dump(),
+                "observation": state.model_dump(),
+                "reward": 0.0,
+                "done": False,
+                "info": {
+                    "message": "Environment reset successfully",
+                    "task_id": task_id,
+                },
             }
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
@@ -138,9 +136,13 @@ async def reset_post(request: Optional[ResetRequest] = None):
             state = env.reset(task_id=task_id)
             logger.info("Environment reset via POST | task=%s", task_id)
             return {
-                "message": "Environment reset successfully",
-                "task_id": task_id,
-                "state": state.model_dump(),
+                "observation": state.model_dump(),
+                "reward": 0.0,
+                "done": False,
+                "info": {
+                    "message": "Environment reset successfully",
+                    "task_id": task_id,
+                },
             }
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
