@@ -18,5 +18,6 @@ ENV PORT=7860 \
 # Expose port for Hugging Face Spaces
 EXPOSE 7860
 
-# Start FastAPI server
+# Start FastAPI server — use root app.py for HF Spaces compatibility,
+# server.app:app is the OpenEnv entry_point used by validators.
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
