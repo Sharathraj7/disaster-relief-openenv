@@ -302,6 +302,7 @@ def run_episode(task_id: str = TASK_ID) -> None:
     logger.info("Running for up to %d steps.", max_steps)
 
     cumulative_reward = 0.0
+    step_rewards: List[float] = []
     step_history: List[Dict] = []
     run_log: List[Dict] = []  # structured log saved to run_log.json
 
@@ -328,6 +329,7 @@ def run_episode(task_id: str = TASK_ID) -> None:
         error_str = errors[0] if errors else "null"
 
         cumulative_reward += reward
+        step_rewards.append(reward)
 
         print(f"[STEP] step={step_num} action={json.dumps(action)} reward={reward:.2f} done={str(done).lower()} error={error_str}")
 
@@ -347,11 +349,12 @@ def run_episode(task_id: str = TASK_ID) -> None:
         run_log.append(step_record)
 
         if done:
-            print(f"[END] success=true steps={step_num} rewards={cumulative_reward:.2f}")
+            rewards_str = ",".join(f"{r:.2f}" for r in step_rewards)
+            print(f"[END] success=true steps={step_num} rewards={rewards_str}")
             break
     else:
-        # Loop ended without done=True (edge case)
-        print(f"[END] success=true steps={max_steps} rewards={cumulative_reward:.2f}")
+        rewards_str = ",".join(f"{r:.2f}" for r in step_rewards)
+        print(f"[END] success=true steps={max_steps} rewards={rewards_str}")
 
     # 4. Save run log to JSON
     log_path = "run_log.json"
