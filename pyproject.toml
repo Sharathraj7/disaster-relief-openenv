@@ -54,6 +54,7 @@ version = "1.0.0"
 environment_module = "env.environment"
 environment_class = "DisasterReliefEnv"
 app_file = "app.py"
+entry_point = "app:app"
 inference_file = "inference.py"
 spec_file = "openenv.yaml"
 tasks = ["easy", "medium", "hard"]
