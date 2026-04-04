@@ -130,21 +130,16 @@ async def reset_get(task_id: str = Query(default="easy", description="Task diffi
 
 
 @app.post("/reset", tags=["Environment"])
-async def reset_post(request: ResetRequest):
-    """
-    Reset the environment via POST request.
-
-    Body:
-      - task_id: 'easy' | 'medium' | 'hard'
-    """
+async def reset_post(request: Optional[ResetRequest] = None):
     global env
+    task_id = request.task_id if request else "easy"
     async with env_lock:
         try:
-            state = env.reset(task_id=request.task_id)
-            logger.info("Environment reset via POST | task=%s", request.task_id)
+            state = env.reset(task_id=task_id)
+            logger.info("Environment reset via POST | task=%s", task_id)
             return {
                 "message": "Environment reset successfully",
-                "task_id": request.task_id,
+                "task_id": task_id,
                 "state": state.model_dump(),
             }
         except ValueError as e:
