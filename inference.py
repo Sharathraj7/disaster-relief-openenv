@@ -283,22 +283,23 @@ def call_llm(client: OpenAI, prompt: str, step_num: int) -> Dict:
 
 def run_episode(task_id: str = TASK_ID) -> None:
     """Run a complete episode using the LLM as the policy."""
-    print("\n" + "=" * 60)
-    print("  AI DISASTER RELIEF LOGISTICS AGENT")
-    print(f"  Task: {task_id.upper()} | Model: {MODEL_NAME}")
-    print("=" * 60 + "\n")
+    logger.info("=" * 60)
+    logger.info("  AI DISASTER RELIEF LOGISTICS AGENT")
+    logger.info("  Task: %s | Model: %s", task_id.upper(), MODEL_NAME)
+    logger.info("=" * 60)
 
     # 1. Build LLM client
     client = build_client()
 
-    print("[START]")
     # 2. Reset environment (single reset — no reset between steps)
     reset_data = reset_environment(task_id)
     state = reset_data["state"]
     max_steps = state["max_steps"]
 
-    print(f"Environment initialised with {len(state['regions'])} regions.")
-    print(f"Running for up to {max_steps} steps.\n")
+    print(f"[START] task={task_id} env=ai-disaster-relief-logistics model={MODEL_NAME}")
+
+    logger.info("Environment initialised with %d regions.", len(state['regions']))
+    logger.info("Running for up to %d steps.", max_steps)
 
     cumulative_reward = 0.0
     step_history: List[Dict] = []
@@ -306,15 +307,11 @@ def run_episode(task_id: str = TASK_ID) -> None:
 
     # 3. Episode loop
     for step_num in range(1, max_steps + 1):
-        print(f"[STEP] {step_num}")
-
         # Build prompt from current (returned) state
         prompt = state_to_prompt(state)
 
         # Query LLM for action
         action = call_llm(client, prompt, step_num)
-
-        print(f"Action: {json.dumps(action, indent=2)}")
 
         # Execute action in environment — use state returned by /step, no re-reset
         try:
@@ -328,12 +325,11 @@ def run_episode(task_id: str = TASK_ID) -> None:
         info = result["info"]
         state = info["state"]  # use state from step response directly
         errors = info.get("errors", [])
+        error_str = errors[0] if errors else "null"
 
         cumulative_reward += reward
 
-        print(f"Reward: {reward:.4f} | Cumulative: {cumulative_reward:.4f}")
-        if errors:
-            print(f"Warnings: {errors}")
+        print(f"[STEP] step={step_num} action={json.dumps(action)} reward={reward:.2f} done={str(done).lower()} error={error_str}")
 
         step_record = {
             "step": step_num,
@@ -351,8 +347,11 @@ def run_episode(task_id: str = TASK_ID) -> None:
         run_log.append(step_record)
 
         if done:
-            print("[END]")
+            print(f"[END] success=true steps={step_num} rewards={cumulative_reward:.2f}")
             break
+    else:
+        # Loop ended without done=True (edge case)
+        print(f"[END] success=true steps={max_steps} rewards={cumulative_reward:.2f}")
 
     # 4. Save run log to JSON
     log_path = "run_log.json"
@@ -380,37 +379,33 @@ def run_episode(task_id: str = TASK_ID) -> None:
 def _print_final_results(
     final_state: Dict, cumulative_reward: float, history: List[Dict]
 ) -> None:
-    """Print the final episode summary."""
+    """Log the final episode summary to stderr (logger) to keep stdout clean."""
     score = final_state.get("episode_score", 0.0)
     unmet = final_state.get("unmet_needs_total", {})
 
-    print("\n📊 FINAL RESULTS")
-    print(f"  Episode Score      : {score:.4f} / 1.0000")
-    print(f"  Cumulative Reward  : {cumulative_reward:.4f}")
-    print(f"  Total Unmet Needs  : Food={unmet.get('food', 0):.1f} | "
-          f"Water={unmet.get('water', 0):.1f} | "
-          f"Medicine={unmet.get('medicine', 0):.1f}")
+    logger.info("FINAL RESULTS")
+    logger.info("  Episode Score      : %.4f / 1.0000", score)
+    logger.info("  Cumulative Reward  : %.4f", cumulative_reward)
+    logger.info("  Total Unmet Needs  : Food=%.1f | Water=%.1f | Medicine=%.1f",
+                unmet.get('food', 0), unmet.get('water', 0), unmet.get('medicine', 0))
 
-    print("\n🗺️  REGION SUMMARY")
+    logger.info("REGION SUMMARY")
     for region in final_state.get("regions", []):
         un = region["unmet_needs"]
         ini = region["initial_needs"]
         ini_total = ini.get("food", 0) + ini.get("water", 0) + ini.get("medicine", 0)
         remaining = un.get("food", 0) + un.get("water", 0) + un.get("medicine", 0)
         pct_met = (1 - remaining / max(1, ini_total)) * 100
-        print(
-            f"  {region['id']} ({region['name']}) | Severity: {region['severity']} | "
-            f"Needs Met: {pct_met:.1f}% | Deaths: {region.get('total_deaths', 0)}"
-        )
+        logger.info("  %s (%s) | Severity: %s | Needs Met: %.1f%% | Deaths: %s",
+                    region['id'], region['name'], region['severity'], pct_met, region.get('total_deaths', 0))
 
-    print("\n📈 STEP HISTORY")
+    logger.info("STEP HISTORY")
     for h in history:
         deliveries = h["action"].get("deliveries", [])
-        print(f"  Step {h['step']}: reward={h['reward']:.4f} | deliveries={len(deliveries)}")
+        logger.info("  Step %d: reward=%.4f | deliveries=%d", h['step'], h['reward'], len(deliveries))
 
     grade = "A" if score >= 0.85 else "B" if score >= 0.70 else "C" if score >= 0.45 else "F"
-    print(f"\n🏆 FINAL GRADE: {grade} (Score: {score:.4f})")
-    print("=" * 60 + "\n")
+    logger.info("FINAL GRADE: %s (Score: %.4f)", grade, score)
 
 
 # ---------------------------------------------------------------------------
@@ -420,14 +415,14 @@ def _print_final_results(
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--all-tasks":
         # Run all 3 tasks sequentially and print a combined summary
-        print("\n" + "=" * 60)
-        print("  RUNNING ALL 3 TASKS")
-        print("=" * 60)
+        logger.info("=" * 60)
+        logger.info("  RUNNING ALL 3 TASKS")
+        logger.info("=" * 60)
         all_scores = {}
         for t in ["easy", "medium", "hard"]:
             run_episode(task_id=t)
             all_scores[t] = None  # scores are printed per-episode
-        print("\nAll tasks complete. Check individual episode summaries above.")
+        logger.info("All tasks complete. Check individual episode summaries above.")
     else:
         task = sys.argv[1] if len(sys.argv) > 1 else TASK_ID
         run_episode(task_id=task)
