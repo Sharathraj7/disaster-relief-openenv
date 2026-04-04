@@ -44,7 +44,7 @@ Homepage = "https://huggingface.co/spaces/Sharath569/disaster-relief-env"
 Repository = "https://github.com/Sharathraj7/disaster-relief-openenv"
 
 [project.scripts]
-server = "server.app:app"
+server = "server.app:main"
 inference = "inference:run_episode"
 
 [tool.setuptools.packages.find]
@@ -56,7 +56,7 @@ version = "1.0.0"
 environment_module = "env.environment"
 environment_class = "DisasterReliefEnv"
 app_file = "server/app.py"
-entry_point = "server.app:app"
+entry_point = "server.app:main"
 inference_file = "inference.py"
 spec_file = "openenv.yaml"
 tasks = ["easy", "medium", "hard"]

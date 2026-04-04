@@ -261,7 +261,10 @@ async def validate_spec():
 # Entry point
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
+
+def main():
+    """Entry point for the server as required by OpenEnv validators."""
+    import uvicorn
     port = int(os.environ.get("PORT", 7860))
     uvicorn.run(
         "server.app:app",
@@ -270,3 +273,7 @@ if __name__ == "__main__":
         reload=False,
         log_level="info",
     )
+
+
+if __name__ == "__main__":
+    main()
