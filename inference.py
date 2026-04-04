@@ -323,7 +323,7 @@ def run_episode(task_id: str = TASK_ID) -> None:
         reward = result["reward"]
         done = result["done"]
         info = result["info"]
-        state = info["state"]  # use state from step response directly
+        state = result["observation"]
         errors = info.get("errors", [])
         error_str = errors[0] if errors else "null"
 

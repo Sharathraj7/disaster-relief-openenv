@@ -153,40 +153,13 @@ async def reset_post(request: Optional[ResetRequest] = None):
 
 @app.post("/step", tags=["Environment"])
 async def step(request: StepRequest):
-    """
-    Execute one action step in the environment.
-
-    Body:
-    ```json
-    {
-      "action": {
-        "deliveries": [
-          {"region_id": "R1", "resource": "water", "amount": 50},
-          {"region_id": "R2", "resource": "food", "amount": 30}
-        ]
-      }
-    }
-    ```
-
-    Returns:
-    ```json
-    {
-      "reward": 0.05,
-      "done": false,
-      "info": {
-        "state": {...},
-        "step_fulfilled": {...},
-        "errors": [],
-        "score_breakdown": {}
-      }
-    }
-    ```
-    """
     global env
     async with env_lock:
         try:
             reward, done, info = env.step(request.action)
+            observation = info.pop("state", {})
             return {
+                "observation": observation,
                 "reward": reward,
                 "done": done,
                 "info": info,
