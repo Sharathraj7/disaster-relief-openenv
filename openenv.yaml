@@ -10,28 +10,28 @@ tasks:
     name: "Two-Region Flood Relief"
     description: "A flood has affected 2 regions. Resources are fully sufficient. The agent should learn basic prioritization by severity."
     difficulty: "easy"
-    grader: "env.grader:grade"
+    grader: env.grader:grade
 
   - id: "medium"
     name: "Four-Region Earthquake Response"
     description: "An earthquake has struck 4 regions with limited supplies. The agent must triage and allocate scarce resources wisely."
     difficulty: "medium"
-    grader: "env.grader:grade"
+    grader: env.grader:grade
 
   - id: "hard"
     name: "Six-Region Cyclone with Dynamic Deterioration"
     description: "A cyclone ravages 6+ regions with severe resource scarcity. Unmet needs escape each step. Agent must adapt dynamically."
     difficulty: "hard"
-    grader: "env.grader:grade"
+    grader: env.grader:grade
 
   - id: "extreme"
     name: "Eight-Region Multi-Disaster Challenge"
     description: "A catastrophic multi-disaster scenario affecting 8 regions. Extreme scarcity and growth of needs. Maximum logistic complexity."
     difficulty: "extreme"
-    grader: "env.grader:grade"
+    grader: env.grader:grade
 
   - id: "trial"
     name: "Trial Task"
     description: "A simple placeholder task to ensure at least 3 graders are recognized."
     difficulty: "easy"
-    grader: "env.grader:grade"
+    grader: env.grader:grade
