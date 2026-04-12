@@ -227,6 +227,77 @@ class HardTask(BaseTask):
 
 
 # ---------------------------------------------------------------------------
+# EXTREME Task — 8 Regions, Maximum Complexity
+# ---------------------------------------------------------------------------
+
+class ExtremeTask(BaseTask):
+    """
+    Multiple disaster scenario with 8 regions and extreme scarcity.
+    Combined Flood, Earthquake and Cyclone effects.
+    """
+
+    task_id = "extreme"
+    difficulty = "extreme"
+    max_steps = 15
+    escalate_needs = True
+    escalation_factor = 1.12  # 12% increase per step
+
+    def get_initial_resources(self) -> ResourcePool:
+        return ResourcePool(
+            food=200.0,
+            water=250.0,
+            medicine=80.0,
+            trucks=4,
+            fuel=800.0,
+        )
+
+    def get_regions(self) -> List[Region]:
+        specs = [
+            ("R1", "Metro Area", 10, 500000, DisasterType.EARTHQUAKE,
+             "Capital city, massive infrastructure failure",
+             RegionNeeds(food=200.0, water=300.0, medicine=150.0)),
+            ("R2", "Refugee Camp", 9, 50000, DisasterType.FLOOD,
+             "Overcrowded camp, disease outbreak risk",
+             RegionNeeds(food=150.0, water=200.0, medicine=100.0)),
+            ("R3", "Power Hub", 8, 10000, DisasterType.CYCLONE,
+             "Critical utility hub, workers trapped",
+             RegionNeeds(food=40.0, water=60.0, medicine=30.0)),
+            ("R4", "Slum District", 9, 100000, DisasterType.FLOOD,
+             "Poor drainage, waterborne illnesses rising",
+             RegionNeeds(food=120.0, water=180.0, medicine=80.0)),
+            ("R5", "Border Town", 6, 25000, DisasterType.EARTHQUAKE,
+             "Geopolitical complications, access difficult",
+             RegionNeeds(food=50.0, water=80.0, medicine=40.0)),
+            ("R6", "Naval Base", 5, 5000, DisasterType.CYCLONE,
+             "Strategic location, minor damage",
+             RegionNeeds(food=20.0, water=30.0, medicine=15.0)),
+            ("R7", "Mining Town", 8, 15000, DisasterType.EARTHQUAKE,
+             "Mine collapse, rescue in progress",
+             RegionNeeds(food=60.0, water=90.0, medicine=70.0)),
+            ("R8", "Coastal Resort", 7, 8000, DisasterType.CYCLONE,
+             "Tourists stranded, low supplies",
+             RegionNeeds(food=40.0, water=50.0, medicine=20.0)),
+        ]
+
+        regions = []
+        for rid, name, sev, pop, dtype, loc, needs in specs:
+            regions.append(
+                Region(
+                    id=rid,
+                    name=name,
+                    severity=sev,
+                    population=pop,
+                    disaster_type=dtype,
+                    location=loc,
+                    needs=copy.deepcopy(needs),
+                    unmet_needs=copy.deepcopy(needs),
+                    initial_needs=copy.deepcopy(needs),
+                )
+            )
+        return regions
+
+
+# ---------------------------------------------------------------------------
 # Task registry
 # ---------------------------------------------------------------------------
 
@@ -234,6 +305,7 @@ TASK_REGISTRY: Dict[str, type[BaseTask]] = {
     "easy": EasyTask,
     "medium": MediumTask,
     "hard": HardTask,
+    "extreme": ExtremeTask,
 }
 
 

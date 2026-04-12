@@ -200,13 +200,13 @@ def _print_results(final_state, cumulative_reward, history, breakdown) -> None:
     score = final_state.episode_score
     unmet = final_state.unmet_needs_total
 
-    print("\n📊 BASELINE RESULTS")
+    print("\n[BASELINE RESULTS]")
     print(f"  Final Score        : {score:.4f} / 1.0000")
     print(f"  Cumulative Reward  : {cumulative_reward:.4f}")
     print(f"  Total Unmet Needs  : Food={unmet.food:.1f} | "
           f"Water={unmet.water:.1f} | Medicine={unmet.medicine:.1f}")
 
-    print("\n📐 SCORE BREAKDOWN")
+    print("\n[SCORE BREAKDOWN]")
     for k, v in breakdown.items():
         if isinstance(v, dict):
             print(f"  {k}:")
@@ -215,7 +215,7 @@ def _print_results(final_state, cumulative_reward, history, breakdown) -> None:
         else:
             print(f"  {k}: {v}")
 
-    print("\n🗺️  REGION SUMMARY")
+    print("\n[REGION SUMMARY]")
     for region in final_state.regions:
         un = region.unmet_needs
         ini = region.initial_needs
@@ -227,13 +227,13 @@ def _print_results(final_state, cumulative_reward, history, breakdown) -> None:
             f"Met={pct_met:.1f}% | Deaths={region.total_deaths}"
         )
 
-    print("\n📈 STEP HISTORY")
+    print("\n[STEP HISTORY]")
     for h in history:
         print(f"  Step {h['step']}: reward={h['reward']:.4f} | "
               f"deliveries={len(h['deliveries'])} | unmet={h['unmet_total']}")
 
     grade = "A" if score >= 0.85 else "B" if score >= 0.70 else "C" if score >= 0.55 else "F"
-    print(f"\n🏆 BASELINE GRADE: {grade} (Score: {score:.4f})")
+    print(f"\n[BASELINE GRADE]: {grade} (Score: {score:.4f})")
     print("=" * 60 + "\n")
 
 
@@ -249,7 +249,7 @@ def main():
         "--task",
         type=str,
         default="easy",
-        choices=["easy", "medium", "hard"],
+        choices=["easy", "medium", "hard", "extreme"],
         help="Task difficulty level (default: easy)",
     )
     parser.add_argument(

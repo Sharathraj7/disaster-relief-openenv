@@ -141,6 +141,9 @@ tasks:
     scenario: flood
     module: env.tasks
     class: EasyTask
+    grader:
+      module: env.grader
+      class: DisasterReliefGrader
 
   - id: medium
     name: "Four-Region Earthquake Response"
@@ -152,6 +155,9 @@ tasks:
     scenario: earthquake
     module: env.tasks
     class: MediumTask
+    grader:
+      module: env.grader
+      class: DisasterReliefGrader
 
   - id: hard
     name: "Six-Region Cyclone with Dynamic Deterioration"
@@ -163,6 +169,23 @@ tasks:
     scenario: cyclone
     module: env.tasks
     class: HardTask
+    grader:
+      module: env.grader
+      class: DisasterReliefGrader
+
+  - id: extreme
+    name: "Eight-Region Multi-Disaster Challenge"
+    description: >
+      A catastrophic multi-disaster scenario affecting 8 regions.
+      Extreme scarcity and growth of needs. Maximum logistic complexity.
+    difficulty: extreme
+    max_steps: 15
+    scenario: multi-disaster
+    module: env.tasks
+    class: ExtremeTask
+    grader:
+      module: env.grader
+      class: DisasterReliefGrader
 
 grader:
   module: env.grader

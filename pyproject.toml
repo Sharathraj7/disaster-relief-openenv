@@ -59,4 +59,4 @@ app_file = "server/app.py"
 entry_point = "server.app:main"
 inference_file = "inference.py"
 spec_file = "openenv.yaml"
-tasks = ["easy", "medium", "hard"]
+tasks = ["easy", "medium", "hard", "extreme"]

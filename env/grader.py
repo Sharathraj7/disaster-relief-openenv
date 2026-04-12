@@ -71,7 +71,7 @@ class DisasterReliefGrader:
             - penalty
         )
 
-        return float(max(0.0, min(1.0, raw_score)))
+        return float(max(0.01, min(0.99, raw_score)))
 
     # ------------------------------------------------------------------
     # Sub-scorers
@@ -223,9 +223,9 @@ class DisasterReliefGrader:
         progress = self._progress_bonus(state.regions, prev_unmet_total)
 
         final = max(
-            0.0,
+            0.01,
             min(
-                1.0,
+                0.99,
                 self.PRIORITY_WEIGHT * priority
                 + self.EFFICIENCY_WEIGHT * efficiency
                 + self.UNMET_NEEDS_WEIGHT * unmet

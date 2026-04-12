@@ -220,6 +220,16 @@ async def list_tasks():
                     "Unmet needs escalate each step — adapt dynamically."
                 ),
             },
+            {
+                "id": "extreme",
+                "name": "Eight-Region Multi-Disaster Challenge",
+                "difficulty": "extreme",
+                "max_steps": 15,
+                "description": (
+                    "A catastrophic multi-disaster scenario affecting 8 regions. "
+                    "Extreme scarcity and growth of needs. Max logistic complexity."
+                ),
+            },
         ]
     }
 
