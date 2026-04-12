@@ -99,9 +99,34 @@ class StepRequest(BaseModel):
 # Routes
 # ---------------------------------------------------------------------------
 
-@app.get("/")
+@app.get("/health", tags=["Environment"])
 def health():
-    return {"status": "ok"}
+    return {"status": "healthy"}
+
+
+@app.get("/metadata", tags=["Environment"])
+def get_metadata():
+    return {
+        "name": "ai-disaster-relief-logistics",
+        "description": "OpenEnv-compliant simulation where an AI agent allocates limited resources across disaster-affected regions.",
+    }
+
+
+@app.get("/schema", tags=["Environment"])
+def get_schema():
+    from env.models import AgentAction, EnvironmentState
+
+    return {
+        "action": AgentAction.model_json_schema(),
+        "observation": EnvironmentState.model_json_schema(),
+        "state": EnvironmentState.model_json_schema(),
+    }
+
+
+@app.post("/mcp", tags=["Environment"])
+async def mcp_endpoint():
+    # Minimal mock for the platform validator
+    return {"jsonrpc": "2.0", "result": {}, "id": 1}
 
 
 @app.get("/reset", tags=["Environment"])
