@@ -291,11 +291,11 @@ def grade(observation=None, **kwargs) -> float:
             "medicine": state.resources.medicine,
         }
 
-        total_resources_used = {
+        total_resources_used = getattr(state, "total_resources_used", {
             "food": 0,
             "water": 0,
             "medicine": 0,
-        }
+        })
 
         # Real scoring
         score = grader.compute_score(
@@ -310,18 +310,9 @@ def grade(observation=None, **kwargs) -> float:
         # Safe fallback (never 0 or 1)
         score = 0.5
 
-    # STRICT clamp and variation
-    if score <= 0.01:
-        task_id = "default"
-        try:
-            if isinstance(observation, dict):
-                task_id = observation.get("task_id", "default")
-            else:
-                task_id = getattr(observation, "task_id", "default")
-        except Exception:
-            pass
-        mapping = {"easy": 0.04, "medium": 0.03, "hard": 0.02, "extreme": 0.01}
-        score = mapping.get(task_id, 0.01)
+    # STRICT clamp
+    if score <= 0.0:
+        score = 0.01
     elif score >= 1.0:
         score = 0.99
 
