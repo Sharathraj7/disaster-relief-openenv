@@ -269,28 +269,39 @@ class DisasterReliefGrader:
             },
         }
 
-def grade(observation=None, **kwargs) -> float:
+def grade(sample=None, item=None, observation=None, **kwargs) -> float:
     """
     OpenEnv-compatible grader wrapper.
 
-    Accepts observation dict (or EnvironmentState), computes a real score
-    via DisasterReliefGrader.compute_score(), and returns a float strictly
-    in (0, 1).  Never raises — returns 0.5 on any unexpected input.
+    Accepts multiple calling conventions:
+      - grade(sample=dict, item=dict)   ← OpenEnv validator standard
+      - grade(observation=dict)          ← alternative
+      - grade(dict)                      ← positional
+
+    Always returns a float strictly in (0, 1).  Never raises.
     """
     from env.models import EnvironmentState
     from env.grader import DisasterReliefGrader
 
-    # ── 1. Reject clearly invalid input early ──────────────────────────
-    if observation is None or not isinstance(observation, dict):
+    # ── 1. Extract the observation dict from whatever args we got ──────
+    obs = None
+    if isinstance(sample, dict):
+        obs = sample
+    elif isinstance(observation, dict):
+        obs = observation
+    elif isinstance(item, dict):
+        obs = item
+
+    if obs is None or not isinstance(obs, dict):
         return 0.5
 
-    # ── 2. Parse observation → EnvironmentState ────────────────────────
+    # ── 2. Parse observation → EnvironmentState ───────────────────────
     try:
-        state = EnvironmentState(**observation)
+        state = EnvironmentState(**obs)
     except Exception:
         return 0.5
 
-    # ── 3. Build arguments safely (getattr only) ──────────────────────
+    # ── 3. Build arguments safely (getattr only) ─────────────────────
     try:
         grader = DisasterReliefGrader()
 
@@ -316,7 +327,7 @@ def grade(observation=None, **kwargs) -> float:
             "food": 0, "water": 0, "medicine": 0,
         })
 
-        # ── 4. Real scoring ────────────────────────────────────────────
+        # ── 4. Real scoring ───────────────────────────────────────────
         score = grader.compute_score(
             state=state,
             initial_unmet_totals=initial_unmet_totals,
@@ -327,10 +338,11 @@ def grade(observation=None, **kwargs) -> float:
     except Exception:
         score = 0.5
 
-    # ── 5. Strict clamp to (0, 1) — never 0.0 or 1.0 ─────────────────
+    # ── 5. Strict clamp to (0, 1) — never 0.0 or 1.0 ────────────────
     if score <= 0.0:
         score = 0.01
     elif score >= 1.0:
         score = 0.99
 
     return float(score)
+

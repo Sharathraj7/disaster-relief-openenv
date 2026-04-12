@@ -141,9 +141,7 @@ tasks:
     scenario: flood
     module: env.tasks
     class: EasyTask
-    grader:
-      type: python
-      path: env.grader:grade
+    grader: "env.grader:grade"
 
   - id: medium
     name: "Four-Region Earthquake Response"
@@ -155,9 +153,7 @@ tasks:
     scenario: earthquake
     module: env.tasks
     class: MediumTask
-    grader:
-      type: python
-      path: env.grader:grade
+    grader: "env.grader:grade"
 
   - id: hard
     name: "Six-Region Cyclone with Dynamic Deterioration"
@@ -169,9 +165,7 @@ tasks:
     scenario: cyclone
     module: env.tasks
     class: HardTask
-    grader:
-      type: python
-      path: env.grader:grade
+    grader: "env.grader:grade"
 
   - id: extreme
     name: "Eight-Region Multi-Disaster Challenge"
@@ -183,9 +177,7 @@ tasks:
     scenario: multi-disaster
     module: env.tasks
     class: ExtremeTask
-    grader:
-      type: python
-      path: env.grader:grade
+    grader: "env.grader:grade"
 
 grader:
   module: env.grader
