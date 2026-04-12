@@ -270,48 +270,53 @@ class DisasterReliefGrader:
         }
 
 def grade(observation=None, **kwargs) -> float:
+    """
+    OpenEnv-compatible grader wrapper.
+
+    Accepts observation dict (or EnvironmentState), computes a real score
+    via DisasterReliefGrader.compute_score(), and returns a float strictly
+    in (0, 1).  Never raises — returns 0.5 on any unexpected input.
+    """
     from env.models import EnvironmentState
     from env.grader import DisasterReliefGrader
 
-    grader = DisasterReliefGrader()
+    # ── 1. Reject clearly invalid input early ──────────────────────────
+    if observation is None or not isinstance(observation, dict):
+        return 0.5
 
+    # ── 2. Parse observation → EnvironmentState ────────────────────────
     try:
-        # Convert observation → state
-        if isinstance(observation, dict):
-            state = EnvironmentState(**observation)
-        else:
-            state = observation
+        state = EnvironmentState(**observation)
+    except Exception:
+        return 0.5
 
-        # Safe defaults (only if missing)
+    # ── 3. Build arguments safely (getattr only) ──────────────────────
+    try:
+        grader = DisasterReliefGrader()
+
+        # initial_unmet_totals
         needs_obj = getattr(state, "unmet_needs_total", None)
-        if needs_obj is not None:
-            if hasattr(needs_obj, "model_dump"):
-                initial_unmet_totals = needs_obj.model_dump()
-            elif isinstance(needs_obj, dict):
-                initial_unmet_totals = needs_obj
-            else:
-                initial_unmet_totals = dict(needs_obj)
+        if needs_obj is not None and hasattr(needs_obj, "model_dump"):
+            initial_unmet_totals = needs_obj.model_dump()
+        elif isinstance(needs_obj, dict):
+            initial_unmet_totals = needs_obj
         else:
-            initial_unmet_totals = {
-                "food": 100,
-                "water": 100,
-                "medicine": 100
-            }
+            initial_unmet_totals = {"food": 100, "water": 100, "medicine": 100}
 
+        # total_resources_available
         resources = getattr(state, "resources", None)
         total_resources_available = {
-            "food": getattr(resources, "food", 1000),
-            "water": getattr(resources, "water", 1000),
-            "medicine": getattr(resources, "medicine", 1000),
+            "food": getattr(resources, "food", 1000) if resources else 1000,
+            "water": getattr(resources, "water", 1000) if resources else 1000,
+            "medicine": getattr(resources, "medicine", 1000) if resources else 1000,
         }
 
+        # total_resources_used
         total_resources_used = getattr(state, "total_resources_used", {
-            "food": 0,
-            "water": 0,
-            "medicine": 0,
+            "food": 0, "water": 0, "medicine": 0,
         })
 
-        # Real scoring
+        # ── 4. Real scoring ────────────────────────────────────────────
         score = grader.compute_score(
             state=state,
             initial_unmet_totals=initial_unmet_totals,
@@ -319,12 +324,10 @@ def grade(observation=None, **kwargs) -> float:
             total_resources_used=total_resources_used,
             prev_unmet_total=-1.0,
         )
-
-    except Exception as e:
-        # Safe fallback (never 0 or 1)
+    except Exception:
         score = 0.5
 
-    # STRICT clamp
+    # ── 5. Strict clamp to (0, 1) — never 0.0 or 1.0 ─────────────────
     if score <= 0.0:
         score = 0.01
     elif score >= 1.0:
