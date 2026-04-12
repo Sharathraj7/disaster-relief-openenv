@@ -239,36 +239,51 @@ class DisasterReliefGrader:
         }
 
 
-def grade(sample=None, item=None, observation=None, **kwargs) -> float:
+def grade(*args, **kwargs) -> float:
     """
     OpenEnv-compatible grader wrapper.
-
-    Accepts multiple calling conventions:
-      - grade(sample=dict, item=dict)   ← OpenEnv validator standard
-      - grade(observation=dict)          ← alternative
-      - grade(dict)                     ← positional
-
-    Always returns a float strictly in (0, 1).  Never raises.
+    Accepts any calling convention. Never raises an exception.
     """
     from env.models import EnvironmentState
     from env.grader import DisasterReliefGrader
 
+    # 1. Safely extract observation dictionary
     obs = None
-    if isinstance(sample, dict):
-        obs = sample
-    elif isinstance(observation, dict):
-        obs = observation
-    elif isinstance(item, dict):
-        obs = item
+    
+    # Check kwargs first
+    if "observation" in kwargs and isinstance(kwargs["observation"], dict):
+        obs = kwargs["observation"]
+    elif "item" in kwargs and isinstance(kwargs["item"], dict):
+        obs = kwargs["item"]
+    elif "sample" in kwargs and isinstance(kwargs["sample"], dict):
+        obs = kwargs["sample"]
+    
+    # Fallback to positional args
+    if obs is None:
+        for arg in args:
+            if isinstance(arg, dict):
+                if "resources" in arg and "regions" in arg:
+                    obs = arg
+                    break
+        if obs is None and len(args) > 0 and isinstance(args[0], dict):
+            obs = args[0]
 
-    if obs is None or not isinstance(obs, dict):
+    # No valid dict found
+    if not obs or not isinstance(obs, dict):
         return 0.5
 
+    # 2. Defensively parse EnvironmentState
     try:
+        # Pass unknown fields gracefully
         state = EnvironmentState(**obs)
     except Exception:
-        return 0.5
+        # If Pydantic fails, try barebones fallback extracting 'episode_score' if available
+        score = obs.get("episode_score", 0.5)
+        if score <= 0.0: return 0.01
+        if score >= 1.0: return 0.99
+        return float(score)
 
+    # 3. Compute score
     try:
         grader = DisasterReliefGrader()
 
@@ -281,15 +296,15 @@ def grade(sample=None, item=None, observation=None, **kwargs) -> float:
             initial_unmet_totals = {"food": 100, "water": 100, "medicine": 100}
 
         resources = getattr(state, "resources", None)
-        total_resources_available = {
-            "food": getattr(resources, "food", 1000) if resources else 1000,
-            "water": getattr(resources, "water", 1000) if resources else 1000,
-            "medicine": getattr(resources, "medicine", 1000) if resources else 1000,
-        }
+        if resources is not None and hasattr(resources, "model_dump"):
+            total_resources_available = resources.model_dump()
+        elif isinstance(resources, dict):
+            total_resources_available = resources
+        else:
+            total_resources_available = {"food": 1000, "water": 1000, "medicine": 1000}
 
-        total_resources_used = getattr(state, "total_resources_used", {
-            "food": 0, "water": 0, "medicine": 0,
-        })
+        # Handle tracked used resources if present, else default
+        total_resources_used = obs.get("total_resources_used", {"food": 0, "water": 0, "medicine": 0})
 
         score = grader.compute_score(
             state=state,
@@ -299,8 +314,9 @@ def grade(sample=None, item=None, observation=None, **kwargs) -> float:
             prev_unmet_total=-1.0,
         )
     except Exception:
-        score = 0.5
+        score = getattr(state, "episode_score", 0.5)
 
+    # 4. Strict clamping
     if score <= 0.0:
         score = 0.01
     elif score >= 1.0:

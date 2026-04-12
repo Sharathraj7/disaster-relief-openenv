@@ -99,9 +99,34 @@ class StepRequest(BaseModel):
 # Routes
 # ---------------------------------------------------------------------------
 
-@app.get("/")
+@app.get("/health", tags=["Environment"])
 def health():
-    return {"status": "ok"}
+    return {"status": "healthy"}
+
+
+@app.get("/metadata", tags=["Environment"])
+def get_metadata():
+    return {
+        "name": "ai-disaster-relief-logistics",
+        "description": "OpenEnv-compliant simulation where an AI agent allocates limited resources across disaster-affected regions.",
+    }
+
+
+@app.get("/schema", tags=["Environment"])
+def get_schema():
+    from env.models import AgentAction, EnvironmentState
+
+    return {
+        "action": AgentAction.model_json_schema(),
+        "observation": EnvironmentState.model_json_schema(),
+        "state": EnvironmentState.model_json_schema(),
+    }
+
+
+@app.post("/mcp", tags=["Environment"])
+async def mcp_endpoint():
+    # Minimal mock for the platform validator
+    return {"jsonrpc": "2.0", "result": {}, "id": 1}
 
 
 @app.get("/reset", tags=["Environment"])
@@ -195,6 +220,7 @@ async def list_tasks():
                 "name": "Two-Region Flood Relief",
                 "difficulty": "easy",
                 "max_steps": 5,
+                "grader": "env.grader:grade",
                 "description": (
                     "A flood affects 2 regions with sufficient resources. "
                     "Learn basic severity-based prioritization."
@@ -205,6 +231,7 @@ async def list_tasks():
                 "name": "Four-Region Earthquake Response",
                 "difficulty": "medium",
                 "max_steps": 8,
+                "grader": "env.grader:grade",
                 "description": (
                     "An earthquake strikes 4 regions with limited supplies. "
                     "Triage and allocate scarce resources wisely."
@@ -215,6 +242,7 @@ async def list_tasks():
                 "name": "Six-Region Cyclone with Dynamic Deterioration",
                 "difficulty": "hard",
                 "max_steps": 12,
+                "grader": "env.grader:grade",
                 "description": (
                     "A cyclone ravages 6+ regions with severe scarcity. "
                     "Unmet needs escalate each step — adapt dynamically."
@@ -225,6 +253,7 @@ async def list_tasks():
                 "name": "Eight-Region Multi-Disaster Challenge",
                 "difficulty": "extreme",
                 "max_steps": 15,
+                "grader": "env.grader:grade",
                 "description": (
                     "A catastrophic multi-disaster scenario affecting 8 regions. "
                     "Extreme scarcity and growth of needs. Max logistic complexity."

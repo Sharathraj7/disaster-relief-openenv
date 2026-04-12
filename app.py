@@ -99,11 +99,6 @@ class StepRequest(BaseModel):
 # Routes
 # ---------------------------------------------------------------------------
 
-@app.get("/", tags=["Info"])
-def root():
-    return {"status": "ok", "version": "1.0.0", "environment": "ai-disaster-relief-logistics"}
-
-
 @app.get("/health", tags=["Environment"])
 def health():
     return {"status": "healthy"}
@@ -207,7 +202,7 @@ async def get_state():
     global env
     try:
         state = env.state()
-        return {"state": state.model_dump()}
+        return {"observation": state.model_dump()}
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -225,6 +220,7 @@ async def list_tasks():
                 "name": "Two-Region Flood Relief",
                 "difficulty": "easy",
                 "max_steps": 5,
+                "grader": "env.grader:grade",
                 "description": (
                     "A flood affects 2 regions with sufficient resources. "
                     "Learn basic severity-based prioritization."
@@ -235,6 +231,7 @@ async def list_tasks():
                 "name": "Four-Region Earthquake Response",
                 "difficulty": "medium",
                 "max_steps": 8,
+                "grader": "env.grader:grade",
                 "description": (
                     "An earthquake strikes 4 regions with limited supplies. "
                     "Triage and allocate scarce resources wisely."
@@ -245,6 +242,7 @@ async def list_tasks():
                 "name": "Six-Region Cyclone with Dynamic Deterioration",
                 "difficulty": "hard",
                 "max_steps": 12,
+                "grader": "env.grader:grade",
                 "description": (
                     "A cyclone ravages 6+ regions with severe scarcity. "
                     "Unmet needs escalate each step — adapt dynamically."
@@ -255,6 +253,7 @@ async def list_tasks():
                 "name": "Eight-Region Multi-Disaster Challenge",
                 "difficulty": "extreme",
                 "max_steps": 15,
+                "grader": "env.grader:grade",
                 "description": (
                     "A catastrophic multi-disaster scenario affecting 8 regions. "
                     "Extreme scarcity and growth of needs. Max logistic complexity."
@@ -286,7 +285,7 @@ async def validate_spec():
     Return the parsed openenv.yaml spec.
     Used by OpenEnv validators and automated spec compliance checks.
     """
-    spec_path = os.path.join(os.path.dirname(__file__), "openenv.yaml")
+    spec_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "openenv.yaml")
     try:
         with open(spec_path, "r") as f:
             spec = yaml.safe_load(f)
@@ -301,12 +300,19 @@ async def validate_spec():
 # Entry point
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
+
+def main():
+    """Entry point for the server as required by OpenEnv validators."""
+    import uvicorn
     port = int(os.environ.get("PORT", 7860))
     uvicorn.run(
-        "app:app",
+        "server.app:app",
         host="0.0.0.0",
         port=port,
         reload=False,
         log_level="info",
     )
+
+
+if __name__ == "__main__":
+    main()

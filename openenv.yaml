@@ -30,8 +30,4 @@ tasks:
     difficulty: "extreme"
     grader: env.grader:grade
 
-  - id: "trial"
-    name: "Trial Task"
-    description: "A simple placeholder task to ensure at least 3 graders are recognized."
-    difficulty: "easy"
-    grader: env.grader:grade
+

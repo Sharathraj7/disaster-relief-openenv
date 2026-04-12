@@ -338,7 +338,9 @@ class DisasterReliefEnv:
         waste_penalty = (fuel_cost * 0.0005) if (fuel_cost > 0 and total_fulfilled == 0) else 0.0
 
         reward = fulfillment_reward + incremental_bonus - death_penalty - waste_penalty
-        return round(float(reward), 6)
+        # STRICT CLAMP: OpenEnv constraints often require reward in [0, 1] range
+        reward = max(0.0, min(1.0, float(reward)))
+        return round(reward, 6)
 
     # ------------------------------------------------------------------
     # Convenience

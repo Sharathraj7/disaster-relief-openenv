@@ -349,12 +349,16 @@ def run_episode(task_id: str = TASK_ID) -> None:
         run_log.append(step_record)
 
         if done:
+            score = state.get("episode_score", 0.0)
+            score = max(0.01, min(0.99, score))
             rewards_str = ",".join(f"{r:.2f}" for r in step_rewards)
-            print(f"[END] success=true steps={step_num} rewards={rewards_str}")
+            print(f"[END] success=true steps={step_num} score={score:.3f} rewards={rewards_str}")
             break
     else:
+        score = state.get("episode_score", 0.0)
+        score = max(0.01, min(0.99, score))
         rewards_str = ",".join(f"{r:.2f}" for r in step_rewards)
-        print(f"[END] success=true steps={max_steps} rewards={rewards_str}")
+        print(f"[END] success=true steps={max_steps} score={score:.3f} rewards={rewards_str}")
 
     # 4. Save run log to JSON
     log_path = "run_log.json"

@@ -175,7 +175,9 @@ def run_baseline(task_id: str = "easy") -> Dict:
 
     # Final results
     final_state = env.state()
-    final_score = final_state.episode_score
+    final_score = getattr(final_state, "episode_score", 0.0)
+    final_score = max(0.01, min(0.99, final_score))
+    
     breakdown = env._grader.score_breakdown(
         state=final_state,
         initial_unmet_totals=env._initial_unmet_totals,
@@ -183,7 +185,7 @@ def run_baseline(task_id: str = "easy") -> Dict:
         total_resources_used=env._total_resources_used,
     )
 
-    _print_results(final_state, cumulative_reward, step_history, breakdown)
+    _print_results(final_state, cumulative_reward, step_history, breakdown, final_score)
 
     return {
         "task_id": task_id,
@@ -195,9 +197,8 @@ def run_baseline(task_id: str = "easy") -> Dict:
     }
 
 
-def _print_results(final_state, cumulative_reward, history, breakdown) -> None:
+def _print_results(final_state, cumulative_reward, history, breakdown, score) -> None:
     """Pretty-print final episode results."""
-    score = final_state.episode_score
     unmet = final_state.unmet_needs_total
 
     print("\n[BASELINE RESULTS]")
