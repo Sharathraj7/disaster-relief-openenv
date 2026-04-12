@@ -71,7 +71,13 @@ class DisasterReliefGrader:
             - penalty
         )
 
-        return float(max(0.01, min(0.99, raw_score)))
+        score = float(raw_score)
+        if score <= 0.0:
+            score = 0.01
+        elif score >= 1.0:
+            score = 0.99
+
+        return score
 
     # ------------------------------------------------------------------
     # Sub-scorers
@@ -249,3 +255,32 @@ class DisasterReliefGrader:
                 "penalty": round(-penalty, 4),
             },
         }
+
+def grade(**kwargs) -> float:
+    from env.models import EnvironmentState
+    
+    grader = DisasterReliefGrader()
+
+    # Adapt args as required
+    state_arg = kwargs.get("state")
+    if isinstance(state_arg, dict):
+        kwargs["state"] = EnvironmentState(**state_arg)
+
+    # Ensure required arguments have fallbacks if missing from kwargs
+    if "initial_unmet_totals" not in kwargs:
+        kwargs["initial_unmet_totals"] = {"food": 100, "water": 100, "medicine": 100}
+    if "total_resources_available" not in kwargs:
+        kwargs["total_resources_available"] = {"food": 1000, "water": 1000, "medicine": 1000}
+    if "total_resources_used" not in kwargs:
+        kwargs["total_resources_used"] = {"food": 0, "water": 0, "medicine": 0}
+
+    # Call real scoring function
+    score = grader.compute_score(**kwargs)
+
+    # STRICT clamp to (0,1)
+    if score <= 0.0:
+        score = 0.01
+    elif score >= 1.0:
+        score = 0.99
+
+    return float(score)
