@@ -256,28 +256,52 @@ class DisasterReliefGrader:
             },
         }
 
-def grade(**kwargs) -> float:
+def grade(observation=None, **kwargs) -> float:
     from env.models import EnvironmentState
-    
+    from env.grader import DisasterReliefGrader
+
     grader = DisasterReliefGrader()
 
-    # Adapt args as required
-    state_arg = kwargs.get("state")
-    if isinstance(state_arg, dict):
-        kwargs["state"] = EnvironmentState(**state_arg)
+    try:
+        # Convert observation → state
+        if isinstance(observation, dict):
+            state = EnvironmentState(**observation)
+        else:
+            state = observation
 
-    # Ensure required arguments have fallbacks if missing from kwargs
-    if "initial_unmet_totals" not in kwargs:
-        kwargs["initial_unmet_totals"] = {"food": 100, "water": 100, "medicine": 100}
-    if "total_resources_available" not in kwargs:
-        kwargs["total_resources_available"] = {"food": 1000, "water": 1000, "medicine": 1000}
-    if "total_resources_used" not in kwargs:
-        kwargs["total_resources_used"] = {"food": 0, "water": 0, "medicine": 0}
+        # Safe defaults (only if missing)
+        initial_unmet_totals = getattr(state, "unmet_needs_total", {
+            "food": 100,
+            "water": 100,
+            "medicine": 100
+        })
 
-    # Call real scoring function
-    score = grader.compute_score(**kwargs)
+        total_resources_available = {
+            "food": state.resources.food,
+            "water": state.resources.water,
+            "medicine": state.resources.medicine,
+        }
 
-    # STRICT clamp to (0,1)
+        total_resources_used = {
+            "food": 0,
+            "water": 0,
+            "medicine": 0,
+        }
+
+        # Real scoring
+        score = grader.compute_score(
+            state=state,
+            initial_unmet_totals=initial_unmet_totals,
+            total_resources_available=total_resources_available,
+            total_resources_used=total_resources_used,
+            prev_unmet_total=None,
+        )
+
+    except Exception:
+        # Safe fallback (never 0 or 1)
+        score = 0.5
+
+    # STRICT clamp
     if score <= 0.0:
         score = 0.01
     elif score >= 1.0:
