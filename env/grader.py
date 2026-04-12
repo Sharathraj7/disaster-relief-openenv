@@ -298,10 +298,11 @@ def grade(observation=None, **kwargs) -> float:
                 "medicine": 100
             }
 
+        resources = getattr(state, "resources", None)
         total_resources_available = {
-            "food": state.resources.food,
-            "water": state.resources.water,
-            "medicine": state.resources.medicine,
+            "food": getattr(resources, "food", 1000),
+            "water": getattr(resources, "water", 1000),
+            "medicine": getattr(resources, "medicine", 1000),
         }
 
         total_resources_used = getattr(state, "total_resources_used", {
