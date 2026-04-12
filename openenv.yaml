@@ -137,10 +137,6 @@ tasks:
       A flood has affected 2 regions. Resources are fully sufficient.
       The agent should learn basic prioritization by severity.
     difficulty: easy
-    max_steps: 5
-    scenario: flood
-    module: env.tasks
-    class: EasyTask
     grader: "env.grader:grade"
 
   - id: medium
@@ -149,10 +145,6 @@ tasks:
       An earthquake has struck 4 regions with limited supplies.
       The agent must triage and allocate scarce resources wisely.
     difficulty: medium
-    max_steps: 8
-    scenario: earthquake
-    module: env.tasks
-    class: MediumTask
     grader: "env.grader:grade"
 
   - id: hard
@@ -161,10 +153,6 @@ tasks:
       A cyclone ravages 6+ regions with severe resource scarcity.
       Unmet needs escalate each step. Agent must adapt dynamically.
     difficulty: hard
-    max_steps: 12
-    scenario: cyclone
-    module: env.tasks
-    class: HardTask
     grader: "env.grader:grade"
 
   - id: extreme
@@ -173,10 +161,6 @@ tasks:
       A catastrophic multi-disaster scenario affecting 8 regions.
       Extreme scarcity and growth of needs. Maximum logistic complexity.
     difficulty: extreme
-    max_steps: 15
-    scenario: multi-disaster
-    module: env.tasks
-    class: ExtremeTask
     grader: "env.grader:grade"
 
 grader:
