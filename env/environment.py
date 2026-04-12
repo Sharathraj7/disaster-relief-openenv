@@ -219,7 +219,7 @@ class DisasterReliefEnv:
                 total_resources_used=self._total_resources_used,
                 prev_unmet_total=self._prev_unmet_total,
             )
-            self._state.episode_score = final_score
+            self._state.episode_score = max(0.01, min(0.99, float(final_score)))
             breakdown = self._grader.score_breakdown(
                 state=self._state,
                 initial_unmet_totals=self._initial_unmet_totals,
