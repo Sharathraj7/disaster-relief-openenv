@@ -99,6 +99,11 @@ class StepRequest(BaseModel):
 # Routes
 # ---------------------------------------------------------------------------
 
+@app.get("/", tags=["Info"])
+def root():
+    return {"status": "ok", "message": "Disaster Relief Logistics API"}
+
+
 @app.get("/health", tags=["Environment"])
 def health():
     return {"status": "healthy"}
