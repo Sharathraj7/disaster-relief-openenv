@@ -31,6 +31,7 @@ class DisasterReliefGrader:
     CRITICAL_SEVERITY_THRESHOLD: int = 8
     CRITICAL_UNMET_THRESHOLD: float = 0.70  # >70% unmet triggers penalty (was 50%)
     PROGRESS_BONUS: float = 0.10           # Bonus when unmet needs decrease vs prev step
+    SCORE_EPSILON: float = 0.0001          # Small offset to keep scores strictly in (0, 1)
 
     def compute_score(
         self,
@@ -71,19 +72,12 @@ class DisasterReliefGrader:
             - penalty
         )
 
-        # Add a tiny natural variation based on average severity to differentiate tasks intrinsically
-        avg_severity = sum(r.severity for r in state.regions) / max(1, len(state.regions))
-        base_variation = avg_severity * 0.001
-
-        score = float(raw_score)
-        if score <= 0.0:
-            score = 0.01 + base_variation
-        elif score >= 1.0:
-            score = 0.99 - base_variation
-        else:
-            score = min(0.99, max(0.01, score + base_variation))
-
-        return float(score)
+        clipped = float(max(0.0, min(1.0, raw_score)))
+        if clipped <= 0.0:
+            return self.SCORE_EPSILON
+        if clipped >= 1.0:
+            return 1.0 - self.SCORE_EPSILON
+        return clipped
 
     # ------------------------------------------------------------------
     # Sub-scorers
@@ -111,7 +105,6 @@ class DisasterReliefGrader:
             if initial_total <= 0:
                 coverage = 1.0
             else:
-                # Coverage = what was actually delivered / what was initially needed
                 coverage = min(1.0, region.total_delivered / initial_total)
 
             weighted_coverage += (region.severity / total_severity) * coverage
@@ -129,10 +122,6 @@ class DisasterReliefGrader:
 
         Under scarcity (hard tasks), the agent physically cannot fulfil all needs,
         so we reward proportional impact rather than absolute fulfillment.
-
-        - Full score if all used resources directly reduced unmet needs.
-        - On hard tasks with severe scarcity, partial score is still achievable.
-        - 0.0 if agent never used any resources (paralysed).
         """
         total_used = sum(used.values())
         total_available = sum(available.values())
@@ -141,7 +130,7 @@ class DisasterReliefGrader:
             return 1.0
 
         if total_used <= 0:
-            return 0.0  # Agent did nothing
+            return 0.0
 
         total_unmet_initial = sum(
             r.initial_needs.total() for r in regions
@@ -149,16 +138,11 @@ class DisasterReliefGrader:
         total_unmet_final = sum(r.unmet_needs.total() for r in regions)
         total_fulfilled = max(0.0, total_unmet_initial - total_unmet_final)
 
-        # Impact ratio: fulfilled / used — but cap at 1.5× to be lenient under scarcity
-        # (escalation inflates unmet_final, so fulfilled can under-represent real effort)
         impact_ratio = min(1.5, total_fulfilled / max(1.0, total_used))
-        impact_score = min(1.0, impact_ratio / 1.5)  # normalize back to [0,1]
+        impact_score = min(1.0, impact_ratio / 1.5)
 
-        # Usage ratio: did the agent actually deploy resources against the need?
-        # Under scarcity, using all available resources is near-optimal behaviour.
         usage_ratio = min(1.0, total_used / max(1.0, min(total_unmet_initial, total_available)))
 
-        # Combined: 60% impact, 40% deployment effort
         efficiency = 0.6 * impact_score + 0.4 * usage_ratio
         return min(1.0, efficiency)
 
@@ -169,8 +153,6 @@ class DisasterReliefGrader:
         Score based on overall fulfillment of resource needs.
 
         Uses total_delivered / initial_needs to measure agent delivery effort.
-        This is escalation-safe: even if unmet_needs grew beyond initial due
-        to hard-task dynamics, the agent's delivery effort is correctly captured.
         """
         initial_total = sum(initial_unmet_totals.values())
         if initial_total <= 0:
@@ -183,28 +165,21 @@ class DisasterReliefGrader:
     def _critical_penalty(self, regions: List[Region]) -> float:
         """
         Apply a -0.15 penalty if any critical region (severity >= 8) received
-        less than 30% of its initial needs delivered (delivery coverage < 0.30).
-
-        Uses total_delivered / initial_needs to measure agent effort.
-        This is escalation-safe and prevents penalising agents facing impossible scarcity.
-        Penalty is applied at most once per episode.
+        less than 30% of its initial needs delivered.
         """
         for region in regions:
             if region.severity >= self.CRITICAL_SEVERITY_THRESHOLD:
                 initial_total = region.initial_needs.total()
                 if initial_total <= 0:
                     continue
-                # Delivery coverage: what % of initial need was actually served
                 delivery_coverage = region.total_delivered / initial_total
                 if delivery_coverage < (1.0 - self.CRITICAL_UNMET_THRESHOLD):
-                    # Less than 30% delivered to a critical region = penalty
                     return self.CRITICAL_PENALTY
         return 0.0
 
     def _progress_bonus(self, regions: List[Region], prev_unmet_total: float) -> float:
         """
         Award +0.10 progress bonus when total unmet needs decreased vs previous step.
-        Returns 0.0 if prev_unmet_total not supplied (< 0) or no improvement.
         """
         if prev_unmet_total < 0:
             return 0.0
@@ -234,10 +209,6 @@ class DisasterReliefGrader:
         penalty = self._critical_penalty(state.regions)
         progress = self._progress_bonus(state.regions, prev_unmet_total)
 
-        # Add tiny natural variation here as well
-        avg_severity = sum(r.severity for r in state.regions) / max(1, len(state.regions))
-        base_variation = avg_severity * 0.001
-
         raw_final = (
             self.PRIORITY_WEIGHT * priority
             + self.EFFICIENCY_WEIGHT * efficiency
@@ -245,13 +216,11 @@ class DisasterReliefGrader:
             + progress
             - penalty
         )
-
-        if raw_final <= 0.0:
-            final = 0.01 + base_variation
-        elif raw_final >= 1.0:
-            final = 0.99 - base_variation
-        else:
-            final = min(0.99, max(0.01, float(raw_final) + base_variation))
+        final = max(0.0, min(1.0, raw_final))
+        if final <= 0.0:
+            final = self.SCORE_EPSILON
+        elif final >= 1.0:
+            final = 1.0 - self.SCORE_EPSILON
 
         return {
             "final_score": round(final, 4),
@@ -269,6 +238,7 @@ class DisasterReliefGrader:
             },
         }
 
+
 def grade(sample=None, item=None, observation=None, **kwargs) -> float:
     """
     OpenEnv-compatible grader wrapper.
@@ -276,14 +246,13 @@ def grade(sample=None, item=None, observation=None, **kwargs) -> float:
     Accepts multiple calling conventions:
       - grade(sample=dict, item=dict)   ← OpenEnv validator standard
       - grade(observation=dict)          ← alternative
-      - grade(dict)                      ← positional
+      - grade(dict)                     ← positional
 
     Always returns a float strictly in (0, 1).  Never raises.
     """
     from env.models import EnvironmentState
     from env.grader import DisasterReliefGrader
 
-    # ── 1. Extract the observation dict from whatever args we got ──────
     obs = None
     if isinstance(sample, dict):
         obs = sample
@@ -295,17 +264,14 @@ def grade(sample=None, item=None, observation=None, **kwargs) -> float:
     if obs is None or not isinstance(obs, dict):
         return 0.5
 
-    # ── 2. Parse observation → EnvironmentState ───────────────────────
     try:
         state = EnvironmentState(**obs)
     except Exception:
         return 0.5
 
-    # ── 3. Build arguments safely (getattr only) ─────────────────────
     try:
         grader = DisasterReliefGrader()
 
-        # initial_unmet_totals
         needs_obj = getattr(state, "unmet_needs_total", None)
         if needs_obj is not None and hasattr(needs_obj, "model_dump"):
             initial_unmet_totals = needs_obj.model_dump()
@@ -314,7 +280,6 @@ def grade(sample=None, item=None, observation=None, **kwargs) -> float:
         else:
             initial_unmet_totals = {"food": 100, "water": 100, "medicine": 100}
 
-        # total_resources_available
         resources = getattr(state, "resources", None)
         total_resources_available = {
             "food": getattr(resources, "food", 1000) if resources else 1000,
@@ -322,12 +287,10 @@ def grade(sample=None, item=None, observation=None, **kwargs) -> float:
             "medicine": getattr(resources, "medicine", 1000) if resources else 1000,
         }
 
-        # total_resources_used
         total_resources_used = getattr(state, "total_resources_used", {
             "food": 0, "water": 0, "medicine": 0,
         })
 
-        # ── 4. Real scoring ───────────────────────────────────────────
         score = grader.compute_score(
             state=state,
             initial_unmet_totals=initial_unmet_totals,
@@ -338,11 +301,9 @@ def grade(sample=None, item=None, observation=None, **kwargs) -> float:
     except Exception:
         score = 0.5
 
-    # ── 5. Strict clamp to (0, 1) — never 0.0 or 1.0 ────────────────
     if score <= 0.0:
         score = 0.01
     elif score >= 1.0:
         score = 0.99
 
     return float(score)
-
